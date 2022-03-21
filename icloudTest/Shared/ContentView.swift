@@ -9,6 +9,9 @@ import SwiftUI
 import CoreData
 
 struct ContentView: View {
+    
+
+
     @Environment(\.managedObjectContext) private var viewContext
 
     @FetchRequest(
@@ -18,25 +21,28 @@ struct ContentView: View {
 
     var body: some View {
         NavigationView {
+            VStack{
+                Text("\(items.count) Items")
             List {
                 ForEach(items) { item in
                     NavigationLink {
                         VStack{
-                            Text("Item at \(item.timestamp!, formatter: itemFormatter)")
-                            Text(item.id?.uuidString ?? "")
+                          ItemRow(item: item)
                         }
                     } label: {
-                        Text(item.timestamp!, formatter: itemFormatter)
+                        ItemRow(item: item)
                     }
                 }
                 .onDelete(perform: deleteItems)
-            }
+            }}
             .toolbar {
 #if os(iOS)
                 ToolbarItem(placement: .navigationBarTrailing) {
                     EditButton()
+                    
                 }
 #endif
+                
                 ToolbarItem {
                     Button(action: addItem) {
                         Label("Add Item", systemImage: "plus")
@@ -74,6 +80,19 @@ struct ContentView: View {
                 // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
                 let nsError = error as NSError
                 fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+            }
+        }
+    }
+}
+
+struct ItemRow: View {
+    @ObservedObject var item: Item   // !! @ObserveObject is the key!!!
+
+    var body: some View {
+        HStack {
+            VStack{
+                Text("Item at \(item.timestamp ?? Date(), formatter: itemFormatter)")
+                Text(item.id?.uuidString ?? "")
             }
         }
     }
