@@ -9,9 +9,6 @@ import SwiftUI
 import CoreData
 
 struct ContentView: View {
-    
-
-
     @Environment(\.managedObjectContext) private var viewContext
 
     @FetchRequest(
@@ -22,8 +19,8 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             VStack{
-                Text("\(items.count) Items")
-            List {
+                Text("\(items.count) Items")
+                List {
                 ForEach(items) { item in
                     NavigationLink {
                         VStack{
@@ -87,12 +84,27 @@ struct ContentView: View {
 
 struct ItemRow: View {
     @ObservedObject var item: Item   // !! @ObserveObject is the key!!!
+    @State var version: String = ""
+    @Environment(\.managedObjectContext) private var viewContext
+    
+    init(item: Item){
+        _version = State(initialValue: item.version ?? "")
+        self.item = item
+    }
+
 
     var body: some View {
         HStack {
             VStack{
                 Text("Item at \(item.timestamp ?? Date(), formatter: itemFormatter)")
                 Text(item.id?.uuidString ?? "")
+                Text(item.version ?? "no version available")
+                TextField("Enter your text", text: $version)
+                    .onChange(of: version) { newValue in
+                    item.version = newValue
+                        item.timestamp = Date()
+                    try? viewContext.save()
+                }
             }
         }
     }

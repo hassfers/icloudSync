@@ -6,10 +6,11 @@
 //
 
 import CoreData
+import CloudKit
 
-struct PersistenceController {
+
+class PersistenceController {
     static let shared = PersistenceController()
-
     static var preview: PersistenceController = {
         let result = PersistenceController(inMemory: true)
         let viewContext = result.container.viewContext
@@ -29,13 +30,37 @@ struct PersistenceController {
     }()
 
     let container: NSPersistentCloudKitContainer
-
+    static let appTransactionAuthorName = "ProjectFettFreiApp"
+    
     init(inMemory: Bool = false) {
         container = NSPersistentCloudKitContainer(name: "icloudTest")
         if inMemory {
             container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
         }
-        container.viewContext.automaticallyMergesChangesFromParent = true
+//        container.viewContext.automaticallyMergesChangesFromParent = true
+        container.viewContext.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
+        // Enable remote notifications
+           guard let description = container.persistentStoreDescriptions.first else {
+               fatalError("###\(#function): Failed to retrieve a persistent store description.")
+           }
+        description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
+        description.setOption(true as NSNumber,
+                              forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
+        
+        
+        
+        // Observe Core Data remote change notifications.
+          NotificationCenter.default.addObserver(
+              self, selector: #selector(self.mergeICloudChanges),
+              name: .NSPersistentStoreRemoteChange, object: nil)
+        
+        container.viewContext.transactionAuthor = PersistenceController.appTransactionAuthorName
+        do {
+            try container.viewContext.setQueryGenerationFrom(.current)
+        } catch {
+            fatalError("###\(#function): Failed to pin viewContext to the current generation:\(error)")
+        }
+        
         container.loadPersistentStores(completionHandler: { (storeDescription, error) in
             if let error = error as NSError? {
                 // Replace this implementation with code to handle the error appropriately.
@@ -52,5 +77,206 @@ struct PersistenceController {
                 fatalError("Unresolved error \(error), \(error.userInfo)")
             }
         })
+    }
+    
+    @objc func mergeICloudChanges(){
+        print("⚡️🎊 incoming icloud changes")
+        
+        let backgroundContext = container.newBackgroundContext()
+           backgroundContext.performAndWait {
+
+               // Fetch history received from outside the app since the last token
+               let historyFetchRequest = NSPersistentHistoryTransaction.fetchRequest!
+               historyFetchRequest.predicate = NSPredicate(format: "author != %@", PersistenceController.appTransactionAuthorName)
+               let request = NSPersistentHistoryChangeRequest.fetchHistory(after: lastHistoryToken)
+               request.fetchRequest = historyFetchRequest
+
+               let result = (try? backgroundContext.execute(request)) as? NSPersistentHistoryResult
+               guard let transactions = result?.result as? [NSPersistentHistoryTransaction],
+                     !transactions.isEmpty
+                   else { return }
+
+               print("⚡️transactions = \(transactions)")
+               self.mergeChanges(from: transactions)
+
+               // Update the history token using the last transaction.
+               lastHistoryToken = transactions.last!.token
+           
+           }
+    }
+    
+    private func mergeChanges(from transactions: [NSPersistentHistoryTransaction]) {
+        
+        let tagEntityName = Item.entity().name
+        var newTagObjectIDs = [NSManagedObjectID]()
+
+        for transaction in transactions where transaction.changes != nil {
+            for change in transaction.changes!
+                where change.changedObjectID.entity.name == tagEntityName
+//            && change.changeType == .insert
+            {
+                print("⚡️change = \(change)")
+                newTagObjectIDs.append(change.changedObjectID)
+            }
+        }
+
+        if !newTagObjectIDs.isEmpty {
+            deduplicateAndWait(tagObjectIDs: newTagObjectIDs)
+        }
+        
+//        container.viewContext.perform {
+//                transactions.forEach { [weak self] transaction in
+//                    guard let self = self, let userInfo = transaction.objectIDNotification().userInfo else { return }
+//                    NSManagedObjectContext.mergeChanges(fromRemoteContextSave: userInfo, into: [self.container.viewContext])
+//            }
+//        }
+    }
+
+    
+    /**
+     Track the last history token processed for a store, and write its value to file.
+     
+     The historyQueue reads the token when executing operations, and updates it after processing is complete.
+     */
+    private var lastHistoryToken: NSPersistentHistoryToken? = nil {
+        didSet {
+            guard let token = lastHistoryToken,
+                let data = try? NSKeyedArchiver.archivedData( withRootObject: token, requiringSecureCoding: true) else { return }
+            
+            do {
+                try data.write(to: tokenFile)
+            } catch {
+                print("###\(#function): Failed to write token data. Error = \(error)")
+            }
+        }
+    }
+    
+    /**
+     The file URL for persisting the persistent history token.
+    */
+    private lazy var tokenFile: URL = {
+        let url = NSPersistentContainer.defaultDirectoryURL().appendingPathComponent("CoreDataCloudKitDemo", isDirectory: true)
+        if !FileManager.default.fileExists(atPath: url.path) {
+            do {
+                try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true, attributes: nil)
+            } catch {
+                print("###\(#function): Failed to create persistent container URL. Error = \(error)")
+            }
+        }
+        return url.appendingPathComponent("token.data", isDirectory: false)
+    }()
+    
+    /**
+     An operation queue for handling history processing tasks: watching changes, deduplicating tags, and triggering UI updates if needed.
+     */
+    private lazy var historyQueue: OperationQueue = {
+        let queue = OperationQueue()
+        queue.maxConcurrentOperationCount = 1
+        return queue
+    }()
+    
+}
+
+extension NSPersistentContainer {
+    func backgroundContext() -> NSManagedObjectContext {
+        let context = newBackgroundContext()
+        context.transactionAuthor = PersistenceController.appTransactionAuthorName
+        return context
+    }
+}
+
+// MARK: - Deduplicate tags
+
+extension PersistenceController {
+    /**
+     Deduplicate tags with the same name by processing the persistent history, one tag at a time, on the historyQueue.
+     
+     All peers should eventually reach the same result with no coordination or communication.
+     */
+    private func deduplicateAndWait(tagObjectIDs: [NSManagedObjectID]) {
+        // Make any store changes on a background context
+        let taskContext = container.backgroundContext()
+        
+        // Use performAndWait because each step relies on the sequence. Since historyQueue runs in the background, waiting won’t block the main queue.
+        taskContext.performAndWait {
+            tagObjectIDs.forEach { tagObjectID in
+                deduplicate(tagObjectID: tagObjectID, performingContext: taskContext)
+            }
+            // Save the background context to trigger a notification and merge the result into the viewContext.
+//            taskContext.save(with: .deduplicate)
+        }
+    }
+
+    /**
+     Deduplicate a single tag.
+     */
+    private func deduplicate(tagObjectID: NSManagedObjectID, performingContext: NSManagedObjectContext) {
+        // das was reinkommt? 
+        guard let tag = performingContext.object(with: tagObjectID) as? Item,
+              let tagName = tag.id?.uuidString else { return
+//            fatalError("###\(#function): Failed to retrieve a valid tag with ID: \(tagObjectID)")
+        }
+
+        // alter eintrag
+//        container.viewContext.object(with: tagObjectID)
+        
+        // neuer eintrag
+//        performingContext.fetch(fetchRequest)
+        
+        // Fetch all tags with the same name, sorted by uuid
+        let fetchRequest: NSFetchRequest<Item> = Item.fetchRequest()
+//        fetchRequest.sortDescriptors = [NSSortDescriptor(key: Item., ascending: true)]
+        fetchRequest.predicate = NSPredicate(format: "id == %@", tagName)
+        
+        // Return if there are no duplicates.
+        guard let newEntry = try? performingContext.fetch(fetchRequest) else {
+            return
+        }
+        
+        let oldEntry = container.viewContext.object(with: tagObjectID) as? Item
+        
+        var array = [newEntry.first, oldEntry].compactMap { $0}
+         
+        if array.count > 1 {
+            array = array.sorted { First, Second in
+                First.timestamp! > Second.timestamp!
+            }
+        }
+        
+        //        print("⚡️###\(#function): Deduplicating tag with name: \(tagName), count: \(duplicatedTags.count)")
+        print("⚡️ \(array)")
+//        // Pick the first tag as the winnerarray
+        let winner = array.first!
+//        duplicatedTags.removeFirst()
+        array.removeFirst()
+        
+        let winningObject = container.viewContext.object(with: winner.objectID)
+        container.viewContext.insert(winningObject)
+        DispatchQueue.main.async {
+            try? self.container.viewContext.save()
+        }
+     
+//        remove(duplicatedTags: array, winner: winner, performingContext: performingContext)
+    }
+    
+    /**
+     Remove duplicate tags from their respective posts, replacing them with the winner.
+     */
+    private func remove(duplicatedTags: [Item], winner: Item, performingContext: NSManagedObjectContext) {
+        duplicatedTags.forEach { tag in
+//            defer {
+                performingContext.delete(tag)
+//            }
+//            guard let posts = tag.posts else { return }
+//
+//            for case let post as Post in posts {
+//                if let mutableTags: NSMutableSet = post.tags?.mutableCopy() as? NSMutableSet {
+//                    if mutableTags.contains(tag) {
+//                        mutableTags.remove(tag)
+//                        mutableTags.add(winner)
+//                    }
+//                }
+//            }
+        }
     }
 }
