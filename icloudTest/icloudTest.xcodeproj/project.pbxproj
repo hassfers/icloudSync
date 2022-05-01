@@ -23,6 +23,16 @@
 		C10F327227DDFCAD00FC669D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C10F324327DDFCAD00FC669D /* Assets.xcassets */; };
 		C164E92427DE98700061500F /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C164E92327DE98700061500F /* CloudKit.framework */; };
 		C164E92727DE9D020061500F /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C164E92627DE9D020061500F /* CloudKit.framework */; };
+		C1EBB0AA2803868000972682 /* ItemContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1EBB0A92803868000972682 /* ItemContentView.swift */; };
+		C1EBB0AB2803868000972682 /* ItemContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1EBB0A92803868000972682 /* ItemContentView.swift */; };
+		C1EBB0B0280388FE00972682 /* SubItem+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1EBB0AC280388FE00972682 /* SubItem+CoreDataClass.swift */; };
+		C1EBB0B1280388FE00972682 /* SubItem+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1EBB0AC280388FE00972682 /* SubItem+CoreDataClass.swift */; };
+		C1EBB0B2280388FE00972682 /* SubItem+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1EBB0AD280388FE00972682 /* SubItem+CoreDataProperties.swift */; };
+		C1EBB0B3280388FE00972682 /* SubItem+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1EBB0AD280388FE00972682 /* SubItem+CoreDataProperties.swift */; };
+		C1EBB0B4280388FE00972682 /* Item+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1EBB0AE280388FE00972682 /* Item+CoreDataClass.swift */; };
+		C1EBB0B5280388FE00972682 /* Item+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1EBB0AE280388FE00972682 /* Item+CoreDataClass.swift */; };
+		C1EBB0B6280388FE00972682 /* Item+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1EBB0AF280388FE00972682 /* Item+CoreDataProperties.swift */; };
+		C1EBB0B7280388FE00972682 /* Item+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1EBB0AF280388FE00972682 /* Item+CoreDataProperties.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -61,6 +71,11 @@
 		C164E92327DE98700061500F /* CloudKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CloudKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.2.sdk/System/Library/Frameworks/CloudKit.framework; sourceTree = DEVELOPER_DIR; };
 		C164E92527DE9C4B0061500F /* icloudTest--iOS--Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "icloudTest--iOS--Info.plist"; sourceTree = "<group>"; };
 		C164E92627DE9D020061500F /* CloudKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CloudKit.framework; path = System/Library/Frameworks/CloudKit.framework; sourceTree = SDKROOT; };
+		C1EBB0A92803868000972682 /* ItemContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemContentView.swift; sourceTree = "<group>"; };
+		C1EBB0AC280388FE00972682 /* SubItem+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "SubItem+CoreDataClass.swift"; path = "../SubItem+CoreDataClass.swift"; sourceTree = "<group>"; };
+		C1EBB0AD280388FE00972682 /* SubItem+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "SubItem+CoreDataProperties.swift"; path = "../SubItem+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		C1EBB0AE280388FE00972682 /* Item+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "Item+CoreDataClass.swift"; path = "../Item+CoreDataClass.swift"; sourceTree = "<group>"; };
+		C1EBB0AF280388FE00972682 /* Item+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "Item+CoreDataProperties.swift"; path = "../Item+CoreDataProperties.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -114,8 +129,10 @@
 		C10F323D27DDFCAB00FC669D /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				C123C59A281DB79D00607A95 /* Data */,
 				C10F324027DDFCAB00FC669D /* icloudTestApp.swift */,
 				C10F324127DDFCAB00FC669D /* ContentView.swift */,
+				C1EBB0A92803868000972682 /* ItemContentView.swift */,
 				C10F324227DDFCAB00FC669D /* Persistence.swift */,
 				C10F324327DDFCAD00FC669D /* Assets.xcassets */,
 				C10F323E27DDFCAB00FC669D /* icloudTest.xcdatamodeld */,
@@ -158,6 +175,17 @@
 				C10F326727DDFCAD00FC669D /* Tests_macOSLaunchTests.swift */,
 			);
 			path = "Tests macOS";
+			sourceTree = "<group>";
+		};
+		C123C59A281DB79D00607A95 /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				C1EBB0AC280388FE00972682 /* SubItem+CoreDataClass.swift */,
+				C1EBB0AD280388FE00972682 /* SubItem+CoreDataProperties.swift */,
+				C1EBB0AE280388FE00972682 /* Item+CoreDataClass.swift */,
+				C1EBB0AF280388FE00972682 /* Item+CoreDataProperties.swift */,
+			);
+			path = Data;
 			sourceTree = "<group>";
 		};
 		C164E92227DE98700061500F /* Frameworks */ = {
@@ -331,6 +359,11 @@
 				C10F326F27DDFCAD00FC669D /* Persistence.swift in Sources */,
 				C10F326B27DDFCAD00FC669D /* icloudTestApp.swift in Sources */,
 				C10F326D27DDFCAD00FC669D /* ContentView.swift in Sources */,
+				C1EBB0B2280388FE00972682 /* SubItem+CoreDataProperties.swift in Sources */,
+				C1EBB0AA2803868000972682 /* ItemContentView.swift in Sources */,
+				C1EBB0B6280388FE00972682 /* Item+CoreDataProperties.swift in Sources */,
+				C1EBB0B4280388FE00972682 /* Item+CoreDataClass.swift in Sources */,
+				C1EBB0B0280388FE00972682 /* SubItem+CoreDataClass.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -342,6 +375,11 @@
 				C10F327027DDFCAD00FC669D /* Persistence.swift in Sources */,
 				C10F326C27DDFCAD00FC669D /* icloudTestApp.swift in Sources */,
 				C10F326E27DDFCAD00FC669D /* ContentView.swift in Sources */,
+				C1EBB0B3280388FE00972682 /* SubItem+CoreDataProperties.swift in Sources */,
+				C1EBB0AB2803868000972682 /* ItemContentView.swift in Sources */,
+				C1EBB0B7280388FE00972682 /* Item+CoreDataProperties.swift in Sources */,
+				C1EBB0B5280388FE00972682 /* Item+CoreDataClass.swift in Sources */,
+				C1EBB0B1280388FE00972682 /* SubItem+CoreDataClass.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

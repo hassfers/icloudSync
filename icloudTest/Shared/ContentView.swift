@@ -8,6 +8,14 @@
 import SwiftUI
 import CoreData
 
+let itemFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateStyle = .short
+    formatter.timeStyle = .medium
+    return formatter
+}()
+
+
 struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
 
@@ -23,9 +31,9 @@ struct ContentView: View {
                 List {
                 ForEach(items) { item in
                     NavigationLink {
-                        VStack{
-                          ItemRow(item: item)
-                        }
+                        
+                         ItemContentView(item: item)
+                        
                     } label: {
                         ItemRow(item: item)
                     }
@@ -110,12 +118,6 @@ struct ItemRow: View {
     }
 }
 
-private let itemFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.dateStyle = .short
-    formatter.timeStyle = .medium
-    return formatter
-}()
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
